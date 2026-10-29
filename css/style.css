@@ -332,7 +332,8 @@ a { color: inherit; }
   border: 1px solid var(--line-strong);
   border-radius: 999px;
   background: var(--field);
-  font-size: 1rem;
+  font-size: 16px; /* menos que 16px faz o iPhone dar zoom ao focar */
+  -webkit-appearance: none;
   appearance: none;
 }
 .search-input::placeholder { color: var(--muted); opacity: .85; }
@@ -787,6 +788,7 @@ dialog.sheet::backdrop {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   padding: 4px 20px 20px;
 }
@@ -937,8 +939,9 @@ dialog.sheet::backdrop {
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--field);
-  font-size: 1rem;
+  font-size: 16px; /* menos que 16px faz o iPhone dar zoom ao focar */
   line-height: 1.4;
+  -webkit-appearance: none;
   appearance: none;
   transition: border-color .15s var(--ease);
 }
@@ -1035,6 +1038,24 @@ dialog.sheet::backdrop {
 .sent-text { margin-top: 16px; font-size: .9375rem; }
 .sent-text a { color: var(--accent); }
 
+/* ---------- Teclado aberto (iPhone) ----------
+   No iOS o teclado não diminui a tela: elementos fixos no rodapé ficam atrás
+   dele. O app.js mede a área visível (visualViewport) e liga .teclado-aberto. */
+
+.teclado-aberto .cart-bar,
+.teclado-aberto .toast { display: none; }
+
+@media (max-width: 767px) {
+  .teclado-aberto dialog.sheet[open] {
+    top: var(--vv-topo, 0px);
+    bottom: auto;
+    height: var(--vv-altura, 100%);
+    max-height: var(--vv-altura, 100%);
+    margin: 0;
+    animation: none;
+  }
+}
+
 /* ---------- Toast ---------- */
 
 .toast {
@@ -1083,7 +1104,9 @@ dialog.sheet::backdrop {
 
 .footer-info dd { font-size: .9375rem; }
 .footer-info a { text-underline-offset: 3px; }
-.footer-info a:hover { color: var(--accent); }
+@media (hover: hover) {
+  .footer-info a:hover { color: var(--accent); }
+}
 
 .hours-list { display: grid; gap: 2px; }
 .hours-list span:first-child { display: inline-block; min-width: 80px; }
@@ -1156,6 +1179,7 @@ dialog.sheet::backdrop {
     width: calc(100% - 64px);
     max-width: 560px;
     max-height: 86vh;
+    max-height: 86dvh;
     margin: auto;
     border-radius: 14px;
   }
@@ -1200,6 +1224,7 @@ dialog.sheet::backdrop {
     display: flex;
     flex-direction: column;
     max-height: calc(100vh - var(--nav-h) - 48px);
+    max-height: calc(100dvh - var(--nav-h) - 48px);
     padding: 24px 24px 8px;
     border: 1px solid var(--line);
     border-radius: 14px;

@@ -3,6 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- DEBUG — remover depois -->
+  <script>
+    /* DEBUG — remover depois.
+       Mostra qualquer erro de JavaScript numa caixa vermelha no topo da tela.
+       Usa addEventListener (e não window.onerror) para não ser sobrescrito
+       pelo aviso amigável mais abaixo. JavaScript antigo de propósito. */
+    (function () {
+      var caixa = null;
+      var fila = [];
+      function escrever(texto) {
+        if (!document.body) { fila.push(texto); return; }
+        if (!caixa) {
+          caixa = document.createElement("div");
+          caixa.setAttribute("style",
+            "position:fixed;top:0;left:0;right:0;z-index:2147483647;max-height:60%;overflow:auto;" +
+            "padding:10px 12px;background:#c00;color:#fff;font:13px/1.4 monospace;" +
+            "white-space:pre-wrap;word-break:break-all;-webkit-text-size-adjust:100%");
+          caixa.appendChild(document.createTextNode("DEBUG — " + navigator.userAgent + "\n"));
+          document.body.appendChild(caixa);
+        }
+        caixa.appendChild(document.createTextNode("\n" + texto + "\n"));
+      }
+      function despejar() {
+        var i;
+        for (i = 0; i < fila.length; i++) escrever(fila[i]);
+        fila = [];
+      }
+      document.addEventListener("DOMContentLoaded", despejar);
+      window.addEventListener("error", function (e) {
+        var alvo = e.target;
+        if (alvo && alvo !== window && (alvo.src || alvo.href)) {
+          escrever("FALHOU AO CARREGAR: " + (alvo.src || alvo.href));
+          return;
+        }
+        var stack = e.error && e.error.stack ? "\n" + e.error.stack : "";
+        escrever("ERRO: " + e.message + "\nArquivo: " + e.filename +
+          "\nLinha: " + e.lineno + "  Coluna: " + e.colno + stack);
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        var r = e.reason;
+        escrever("PROMISE REJEITADA: " + (r && r.message ? r.message : String(r)) +
+          (r && r.stack ? "\n" + r.stack : ""));
+      });
+    })();
+  </script>
+  <!-- /DEBUG -->
   <title>Hamburguer com H — Cardápio</title>
   <meta name="description" content="Cardápio digital da Hamburguer com H. Monte seu pedido e envie pelo WhatsApp.">
   <meta name="theme-color" content="#F6F2EA">

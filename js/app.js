@@ -55,7 +55,7 @@
   }
 
   const normalizar = (s) =>
-    String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const slug = (s) => normalizar(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
@@ -94,21 +94,33 @@
   const DIAS_NOME = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
   const DIAS_TITULO = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
+  // Dia da semana e minutos do dia no fuso da loja. Nunca cria Date a partir
+  // de texto (o Safari devolve Invalid Date para vários formatos): monta os
+  // números a partir de formatToParts e, se algo falhar, usa a hora local.
   function agoraLoja() {
     const data = new Date();
+    const local = { dia: data.getDay(), minutos: data.getHours() * 60 + data.getMinutes() };
     try {
-      const partes = new Intl.DateTimeFormat("en-US", {
+      const partes = new Intl.DateTimeFormat("pt-BR", {
         timeZone: CONFIG.fusoHorario || "America/Sao_Paulo",
-        weekday: "short",
-        hour: "2-digit",
-        minute: "2-digit",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
         hour12: false
       }).formatToParts(data);
-      const parte = (t) => (partes.find((p) => p.type === t) || {}).value;
-      const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parte("weekday"));
-      return { dia, minutos: (Number(parte("hour")) % 24) * 60 + Number(parte("minute")) };
+      const parte = (t) => {
+        const p = partes.filter((x) => x.type === t)[0];
+        return p ? parseInt(p.value, 10) : NaN;
+      };
+      const ano = parte("year"), mes = parte("month"), diaMes = parte("day");
+      const hora = parte("hour") % 24, minuto = parte("minute");
+      if ([ano, mes, diaMes, hora, minuto].some((n) => isNaN(n))) return local;
+      const dia = new Date(Date.UTC(ano, mes - 1, diaMes)).getUTCDay();
+      return { dia: dia, minutos: hora * 60 + minuto };
     } catch (e) {
-      return { dia: data.getDay(), minutos: data.getHours() * 60 + data.getMinutes() };
+      return local;
     }
   }
 
@@ -705,6 +717,24 @@
       if (!alvo || !alvo.isConnected || alvo.disabled || !alvo.getClientRects().length) alvo = $("#cardapio");
       alvo.focus({ preventScroll: true });
     });
+  }
+
+  // No iPhone o teclado cobre a parte de baixo da tela sem redimensioná-la.
+  // Mede a área realmente visível para o CSS encaixar o bottom sheet nela
+  // e esconder a barra do carrinho enquanto o teclado está aberto.
+  function medirAreaVisivel() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const raiz = document.documentElement;
+    const teclado = vv.scale < 1.05 && window.innerHeight - vv.height > 120;
+    raiz.style.setProperty("--vv-altura", vv.height + "px");
+    raiz.style.setProperty("--vv-topo", vv.offsetTop + "px");
+    raiz.classList.toggle("teclado-aberto", teclado);
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", medirAreaVisivel);
+    window.visualViewport.addEventListener("scroll", medirAreaVisivel);
+    medirAreaVisivel();
   }
 
   /* ---------- Detalhes do item ---------- */
