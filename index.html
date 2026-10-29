@@ -10,6 +10,34 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    /* Se algo quebrar (navegador antigo, arquivo que não carregou...), mostra um
+       aviso amigável em vez de deixar a página em branco ou sem resposta.
+       Escrito em JavaScript antigo de propósito, para rodar em qualquer navegador. */
+    (function () {
+      var mostrado = false;
+      function avisar() {
+        if (mostrado) return;
+        if (!document.body) { document.addEventListener("DOMContentLoaded", avisar); return; }
+        mostrado = true;
+        var numero = window.CONFIG && window.CONFIG.whatsapp ? String(window.CONFIG.whatsapp).replace(/\D/g, "") : "";
+        var caixa = document.createElement("div");
+        caixa.className = "erro-global";
+        caixa.setAttribute("role", "alert");
+        caixa.innerHTML =
+          "<p><strong>Ops, algo não carregou direito.</strong> Tente recarregar a página. " +
+          "Se continuar, faça seu pedido direto pelo WhatsApp.</p>" +
+          "<p><button type=\"button\" onclick=\"location.reload()\">Recarregar</button>" +
+          (numero ? "<a href=\"https://wa.me/" + numero + "\">Pedir pelo WhatsApp</a>" : "") + "</p>";
+        document.body.appendChild(caixa);
+      }
+      window.onerror = function () { avisar(); };
+      window.addEventListener("unhandledrejection", avisar);
+      window.addEventListener("load", function () {
+        if (!document.querySelector("#menu-list .item")) avisar();
+      });
+    })();
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#cardapio">Pular para o cardápio</a>

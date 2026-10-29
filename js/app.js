@@ -11,6 +11,7 @@
 
   const CHAVE_CARRINHO = "hcomh:carrinho:v1";
   const CHAVE_CLIENTE = "hcomh:cliente:v1";
+  const CHAVE_ENVIADO = "hcomh:enviado";
   const MAX_QTD = 99;
   const MAX_ADICIONAL = 10;
 
@@ -101,7 +102,7 @@
         weekday: "short",
         hour: "2-digit",
         minute: "2-digit",
-        hourCycle: "h23"
+        hour12: false
       }).formatToParts(data);
       const parte = (t) => (partes.find((p) => p.type === t) || {}).value;
       const dia = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(parte("weekday"));
@@ -629,7 +630,7 @@
     salvarCarrinho();
     $$(".item", el.menuLista).forEach(atualizarItem);
     renderCarrinho();
-    if (el.checkoutDialog.open) renderResumoCheckout();
+    if (estaAberto(el.checkoutDialog)) renderResumoCheckout();
     restaurarFoco(foco);
   }
 
@@ -637,20 +638,65 @@
      Diálogos (modal no desktop, bottom sheet no celular)
      ========================================================== */
 
+  // iOS anterior ao 15.4 e navegadores antigos não têm <dialog>.showModal().
+  // Nesses casos o diálogo é aberto "na mão", com um fundo escuro próprio.
+  const dialogNativo = typeof HTMLDialogElement === "function" &&
+    typeof HTMLDialogElement.prototype.showModal === "function";
+
+  const fundoDialog = document.createElement("div");
+  fundoDialog.className = "dialog-fundo";
+  fundoDialog.hidden = true;
+  document.body.appendChild(fundoDialog);
+
+  const estaAberto = (dialog) => dialog.hasAttribute("open");
+  const dialogsAbertos = () => $$("dialog[open]");
+
+  function mostrarDialog(dialog) {
+    if (estaAberto(dialog)) return;
+    if (dialogNativo) { dialog.showModal(); return; }
+    dialog.setAttribute("open", "");
+    dialog.classList.add("is-fallback");
+    fundoDialog.hidden = false;
+    const primeiro = $("button, [href], input, textarea", dialog);
+    if (primeiro) primeiro.focus();
+  }
+
+  function fecharDialog(dialog) {
+    if (!estaAberto(dialog)) return;
+    if (dialogNativo) { dialog.close(); return; }
+    dialog.removeAttribute("open");
+    dialog.classList.remove("is-fallback");
+    if (!dialogsAbertos().length) fundoDialog.hidden = true;
+    let evento;
+    try { evento = new Event("close"); } catch (e) { evento = document.createEvent("Event"); evento.initEvent("close", false, false); }
+    dialog.dispatchEvent(evento);
+  }
+
+  if (!dialogNativo) {
+    fundoDialog.addEventListener("click", () => {
+      const abertos = dialogsAbertos();
+      if (abertos.length) fecharDialog(abertos[abertos.length - 1]);
+    });
+    document.addEventListener("keydown", (e) => {
+      const abertos = dialogsAbertos();
+      if ((e.key === "Escape" || e.key === "Esc") && abertos.length) fecharDialog(abertos[abertos.length - 1]);
+    });
+  }
+
   function abrirDialog(dialog, gatilho) {
     dialog._gatilho = gatilho || document.activeElement;
     dialog._focoGatilho = dialog._gatilho && dialog._gatilho.dataset ? dialog._gatilho.dataset.foco : null;
-    if (!dialog.open) dialog.showModal();
+    mostrarDialog(dialog);
     document.body.classList.add("is-locked");
   }
 
   function prepararDialog(dialog) {
     dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) dialog.close();
-      else if (e.target.closest("[data-close]")) dialog.close();
+      if (e.target === dialog) fecharDialog(dialog);
+      else if (e.target.closest("[data-close]")) fecharDialog(dialog);
     });
     dialog.addEventListener("close", () => {
-      if (!$$("dialog[open]").length) document.body.classList.remove("is-locked");
+      if (!dialogsAbertos().length) document.body.classList.remove("is-locked");
       if (dialog._semDevolverFoco) { dialog._semDevolverFoco = false; return; }
       let alvo = dialog._gatilho;
       if ((!alvo || !alvo.isConnected) && dialog._focoGatilho) {
@@ -829,7 +875,7 @@
         return;
       }
       adicionarLinha(linhaDoEstado());
-      dialog.close();
+      fecharDialog(dialog);
       atualizar();
       destacarItem(item);
       mostrarToast(`Adicionado ao pedido: ${estado.qtd > 1 ? estado.qtd + "x " : ""}${item.nome}`);
@@ -848,9 +894,12 @@
     abrirDialog(el.carrinhoDialog, el.barra);
   }
 
-  desktop.addEventListener("change", (e) => {
-    if (e.matches && el.carrinhoDialog.open) el.carrinhoDialog.close();
-  });
+  function aoMudarLargura(e) {
+    if (e.matches && estaAberto(el.carrinhoDialog)) fecharDialog(el.carrinhoDialog);
+  }
+  // Safari anterior ao 14 só conhece addListener.
+  if (desktop.addEventListener) desktop.addEventListener("change", aoMudarLargura);
+  else if (desktop.addListener) desktop.addListener(aoMudarLargura);
 
   /* ==========================================================
      Checkout
@@ -917,11 +966,12 @@
       carrinho = [];
       atualizar();
       el.checkoutDialog._semDevolverFoco = true;
-      el.checkoutDialog.close();
+      fecharDialog(el.checkoutDialog);
       $("#cardapio").focus({ preventScroll: true });
       mostrarToast("Carrinho limpo");
     });
-    $("#btn-manter").addEventListener("click", () => el.checkoutDialog.close());
+    $("#btn-manter").addEventListener("click", () => fecharDialog(el.checkoutDialog));
+    el.checkoutDialog.addEventListener("close", esquecerEnvio);
   }
 
   function aplicarTipo() {
@@ -953,10 +1003,10 @@
   }
 
   function abrirCheckout() {
-    const gatilho = el.carrinhoDialog.open ? el.barra : document.activeElement;
-    if (el.carrinhoDialog.open) {
+    const gatilho = estaAberto(el.carrinhoDialog) ? el.barra : document.activeElement;
+    if (estaAberto(el.carrinhoDialog)) {
       el.carrinhoDialog._semDevolverFoco = true;
-      el.carrinhoDialog.close();
+      fecharDialog(el.carrinhoDialog);
     }
 
     Object.entries(campos).forEach(([nome, campo]) => {
@@ -1079,12 +1129,49 @@
     if (!dados) return;
 
     const url = `https://wa.me/${String(CONFIG.whatsapp || "").replace(/\D/g, "")}?text=${encodeURIComponent(montarMensagem(dados))}`;
-    window.open(url, "_blank", "noopener");
+    mostrarEnviado(url);
+    try { sessionStorage.setItem(CHAVE_ENVIADO, url); } catch (err) { /* armazenamento indisponível */ }
+    abrirWhatsApp(url);
+  }
 
-    $("#enviado-link").href = url;
+  // No celular (e nos navegadores internos do Instagram/WhatsApp) window.open
+  // costuma ser bloqueado como popup; lá a navegação vai direto para o wa.me.
+  function ehCelular() {
+    return /Android|iPhone|iPad|iPod|Mobile|FBAN|FBAV|Instagram/i.test(navigator.userAgent) ||
+      !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
+  }
+
+  function abrirWhatsApp(url) {
+    if (!ehCelular()) {
+      const janela = window.open(url, "_blank");
+      if (janela) {
+        try { janela.opener = null; } catch (err) { /* ignorado */ }
+        return;
+      }
+    }
+    window.location.href = url;
+  }
+
+  function mostrarEnviado(url) {
+    const link = $("#enviado-link");
+    link.href = url;
+    if (ehCelular()) link.removeAttribute("target");
     form.hidden = true;
     el.checkoutEnviado.hidden = false;
+    if (!estaAberto(el.checkoutDialog)) abrirDialog(el.checkoutDialog, $("#cardapio"));
     $("#enviado-title").focus();
+  }
+
+  // Quem volta do WhatsApp para o site (a página pode recarregar) ainda vê
+  // a opção de limpar o carrinho.
+  function retomarEnvio() {
+    let url = null;
+    try { url = sessionStorage.getItem(CHAVE_ENVIADO); } catch (err) { /* armazenamento indisponível */ }
+    if (url && carrinho.length && !estaAberto(el.checkoutDialog)) mostrarEnviado(url);
+  }
+
+  function esquecerEnvio() {
+    try { sessionStorage.removeItem(CHAVE_ENVIADO); } catch (err) { /* armazenamento indisponível */ }
   }
 
   /* ==========================================================
@@ -1104,7 +1191,9 @@
     const logo = new Image();
     logo.onload = () => {
       logo.alt = nome;
-      $("#brand").replaceChildren(logo);
+      const marca = $("#brand");
+      marca.innerHTML = "";
+      marca.appendChild(logo);
     };
     logo.src = "img/logo.png";
 
@@ -1144,7 +1233,7 @@
     el.status.classList.toggle("is-open", st.aberto);
     el.status.classList.toggle("is-closed", !st.aberto);
     el.statusTexto.textContent = st.texto;
-    if (el.checkoutDialog.open) renderAvisoFechado();
+    if (estaAberto(el.checkoutDialog)) renderAvisoFechado();
 
     const dia = agoraLoja().dia;
     if (dia !== diaAnterior) {
@@ -1314,5 +1403,6 @@
   atualizarStatus();
   medirNav();
   verificarRolagem();
+  retomarEnvio();
   setInterval(atualizarStatus, 30 * 1000);
 })();
