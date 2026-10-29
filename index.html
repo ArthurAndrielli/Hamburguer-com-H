@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hamburguer com H — Cardápio</title>
+  <meta name="description" content="Cardápio digital da Hamburguer com H. Monte seu pedido e envie pelo WhatsApp.">
+  <meta name="theme-color" content="#F6F2EA">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#cardapio">Pular para o cardápio</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand-block">
+        <a class="brand" href="#" id="brand" aria-label="Hamburguer com H — início">
+          <span class="brand-text" id="brand-text">Hamburguer com <em>H</em></span>
+        </a>
+        <p class="status" id="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-text">Verificando horário…</span>
+        </p>
+      </div>
+      <div class="header-actions">
+        <a class="btn btn-outline btn-whatsapp" id="header-whatsapp" href="#" target="_blank" rel="noopener">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          <span class="btn-whatsapp-label">WhatsApp</span>
+        </a>
+        <a class="icon-btn" id="header-instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram da Hamburguer com H">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <nav class="cat-nav" id="cat-nav" aria-label="Categorias do cardápio">
+    <div class="container">
+      <ul class="cat-nav-list" id="cat-nav-list"></ul>
+    </div>
+  </nav>
+
+  <div class="container layout">
+    <main class="menu" id="cardapio" tabindex="-1">
+      <div class="menu-intro">
+        <h1 class="menu-title">Cardápio</h1>
+        <p class="menu-lead" id="menu-lead"></p>
+      </div>
+
+      <div class="search">
+        <label class="visually-hidden" for="search-input">Buscar item no cardápio</label>
+        <svg class="icon search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input class="search-input" id="search-input" type="search" placeholder="Buscar no cardápio" autocomplete="off">
+      </div>
+      <p class="search-empty" id="search-empty" role="status" hidden></p>
+
+      <div id="menu-list"></div>
+    </main>
+
+    <aside class="cart-aside" aria-labelledby="cart-aside-title">
+      <div class="cart-aside-inner">
+        <h2 class="cart-title" id="cart-aside-title">Seu pedido</h2>
+        <div class="cart-body" id="cart-aside-body" tabindex="-1"></div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <p class="footer-name">Hamburguer com <em>H</em></p>
+      </div>
+      <dl class="footer-info">
+        <div><dt>Endereço</dt><dd id="footer-endereco"></dd></div>
+        <div><dt>Telefone</dt><dd><a id="footer-telefone" href="#" target="_blank" rel="noopener"></a></dd></div>
+        <div><dt>Horário</dt><dd id="footer-horario"></dd></div>
+        <div><dt>Instagram</dt><dd><a id="footer-instagram" href="#" target="_blank" rel="noopener"></a></dd></div>
+      </dl>
+    </div>
+  </footer>
+
+  <!-- Barra do carrinho (celular/tablet) -->
+  <button class="cart-bar" id="cart-bar" type="button" aria-haspopup="dialog" hidden>
+    <span class="cart-bar-count" id="cart-bar-count">0</span>
+    <span class="cart-bar-label">Ver pedido</span>
+    <span class="cart-bar-total" id="cart-bar-total">R$ 0,00</span>
+  </button>
+
+  <!-- Detalhes do item -->
+  <dialog class="sheet" id="item-dialog" aria-labelledby="item-dialog-title"></dialog>
+
+  <!-- Carrinho (celular/tablet) -->
+  <dialog class="sheet" id="cart-dialog" aria-labelledby="cart-dialog-title">
+    <div class="sheet-inner">
+      <header class="sheet-head">
+        <h2 class="sheet-title" id="cart-dialog-title">Seu pedido</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar pedido">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="sheet-body cart-body" id="cart-dialog-body" tabindex="-1"></div>
+    </div>
+  </dialog>
+
+  <!-- Finalização -->
+  <dialog class="sheet" id="checkout-dialog" aria-labelledby="checkout-title">
+    <form class="sheet-inner" id="checkout-form" novalidate>
+      <header class="sheet-head">
+        <div>
+          <p class="eyebrow">Finalizar pedido</p>
+          <h2 class="sheet-title" id="checkout-title">Entrega e pagamento</h2>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+
+      <div class="sheet-body">
+        <p class="notice" id="checkout-fechado" hidden></p>
+
+        <fieldset class="group" id="fs-tipo">
+          <legend class="group-title">Como prefere receber?</legend>
+          <div class="segmented">
+            <label class="segmented-option" id="opt-entrega">
+              <input type="radio" name="tipo" value="entrega">
+              <span>Entrega</span>
+            </label>
+            <label class="segmented-option" id="opt-retirada">
+              <input type="radio" name="tipo" value="retirada">
+              <span>Retirada no local</span>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="group">
+          <legend class="group-title">Seus dados</legend>
+          <div class="field">
+            <label for="f-nome">Nome</label>
+            <input id="f-nome" name="nome" type="text" autocomplete="name" aria-describedby="err-nome">
+            <p class="field-error" id="err-nome" hidden></p>
+          </div>
+          <div class="field">
+            <label for="f-telefone">Telefone / WhatsApp</label>
+            <input id="f-telefone" name="telefone" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(19) 99999-9999" aria-describedby="err-telefone">
+            <p class="field-error" id="err-telefone" hidden></p>
+          </div>
+        </fieldset>
+
+        <fieldset class="group" id="fs-endereco">
+          <legend class="group-title">Endereço de entrega</legend>
+          <div class="field-row">
+            <div class="field field-grow">
+              <label for="f-rua">Rua</label>
+              <input id="f-rua" name="rua" type="text" autocomplete="address-line1" aria-describedby="err-rua">
+              <p class="field-error" id="err-rua" hidden></p>
+            </div>
+            <div class="field field-num">
+              <label for="f-numero">Número</label>
+              <input id="f-numero" name="numero" type="text" inputmode="numeric" aria-describedby="err-numero">
+              <p class="field-error" id="err-numero" hidden></p>
+            </div>
+          </div>
+          <div class="field">
+            <label for="f-bairro">Bairro</label>
+            <input id="f-bairro" name="bairro" type="text" autocomplete="address-level3" aria-describedby="err-bairro">
+            <p class="field-error" id="err-bairro" hidden></p>
+          </div>
+          <div class="field">
+            <label for="f-complemento">Complemento / ponto de referência <span class="optional">(opcional)</span></label>
+            <input id="f-complemento" name="complemento" type="text" autocomplete="address-line2">
+          </div>
+        </fieldset>
+
+        <div class="group pickup" id="retirada-info" hidden>
+          <p class="group-title">Retirada</p>
+          <p class="pickup-address" id="retirada-endereco"></p>
+        </div>
+
+        <fieldset class="group" id="fs-pagamento" aria-describedby="err-pagamento">
+          <legend class="group-title">Forma de pagamento</legend>
+          <div class="choice-list" id="pagamento-opcoes"></div>
+          <p class="field-error" id="err-pagamento" hidden></p>
+          <div class="field troco" id="troco-wrap" hidden>
+            <label for="f-troco">Troco para quanto? <span class="optional">(opcional)</span></label>
+            <input id="f-troco" name="troco" type="text" inputmode="decimal" placeholder="R$ 0,00" aria-describedby="hint-troco err-troco">
+            <p class="field-hint" id="hint-troco">Deixe em branco se não precisar de troco.</p>
+            <p class="field-error" id="err-troco" hidden></p>
+          </div>
+        </fieldset>
+
+        <div class="group">
+          <p class="group-title">Resumo</p>
+          <div class="totals" id="checkout-totais"></div>
+        </div>
+
+        <div class="form-alert" id="checkout-erros" role="alert" hidden></div>
+      </div>
+
+      <footer class="sheet-foot">
+        <button class="btn btn-primary btn-block" type="submit">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+          Enviar pedido pelo WhatsApp
+        </button>
+      </footer>
+    </form>
+
+    <div class="sheet-inner" id="checkout-enviado" hidden>
+      <header class="sheet-head">
+        <div>
+          <p class="eyebrow">Pedido</p>
+          <h2 class="sheet-title" tabindex="-1" id="enviado-title">Pedido aberto no WhatsApp</h2>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Fechar">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </header>
+      <div class="sheet-body">
+        <p class="sent-text">Confira a mensagem e toque em enviar na conversa. Assim que recebermos, confirmamos seu pedido por lá.</p>
+        <p class="sent-text muted">Se o WhatsApp não abriu, <a id="enviado-link" href="#" target="_blank" rel="noopener">toque aqui para abrir novamente</a>.</p>
+      </div>
+      <footer class="sheet-foot sheet-foot-split">
+        <button class="btn btn-outline" type="button" id="btn-manter">Manter itens</button>
+        <button class="btn btn-primary" type="button" id="btn-limpar">Limpar carrinho</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data/config.js"></script>
+  <script src="data/menu.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
