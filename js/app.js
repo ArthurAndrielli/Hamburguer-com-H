@@ -650,50 +650,68 @@
      Diálogos (modal no desktop, bottom sheet no celular)
      ========================================================== */
 
-  // iOS anterior ao 15.4 e navegadores antigos não têm <dialog>.showModal().
-  // Nesses casos o diálogo é aberto "na mão", com um fundo escuro próprio.
-  const dialogNativo = typeof HTMLDialogElement === "function" &&
-    typeof HTMLDialogElement.prototype.showModal === "function";
+  // Modal feito à mão (sem <dialog>/showModal): no Safari do iPhone o diálogo
+  // nativo chegou a mostrar só o fundo escuro, sem o painel, travando a tela.
+  // Aqui o painel fica visível assim que o container aparece; a animação de
+  // entrada é só enfeite e, se falhar, o painel continua na tela.
+  const pilhaDialogs = [];
 
-  const fundoDialog = document.createElement("div");
-  fundoDialog.className = "dialog-fundo";
-  fundoDialog.hidden = true;
-  document.body.appendChild(fundoDialog);
+  const modalDe = (dialog) => dialog.parentElement;
+  const estaAberto = (dialog) => !modalDe(dialog).hidden;
 
-  const estaAberto = (dialog) => dialog.hasAttribute("open");
-  const dialogsAbertos = () => $$("dialog[open]");
+  function terminarEntrada(dialog) {
+    modalDe(dialog).classList.remove("is-entrando");
+  }
 
   function mostrarDialog(dialog) {
     if (estaAberto(dialog)) return;
-    if (dialogNativo) { dialog.showModal(); return; }
-    dialog.setAttribute("open", "");
-    dialog.classList.add("is-fallback");
-    fundoDialog.hidden = false;
-    const primeiro = $("button, [href], input, textarea", dialog);
-    if (primeiro) primeiro.focus();
+    const modal = modalDe(dialog);
+    modal.classList.add("is-entrando");
+    modal.hidden = false;
+    pilhaDialogs.push(dialog);
+    void modal.offsetHeight; // aplica o estado inicial antes de animar
+    requestAnimationFrame(() => terminarEntrada(dialog));
+    // Segurança: mesmo sem requestAnimationFrame/transição, o painel aparece.
+    setTimeout(() => {
+      terminarEntrada(dialog);
+      if (estaAberto(dialog) && dialog.getBoundingClientRect().height < 20) fecharTodos();
+    }, 400);
+    try { dialog.focus({ preventScroll: true }); } catch (e) { dialog.focus(); }
   }
 
   function fecharDialog(dialog) {
     if (!estaAberto(dialog)) return;
-    if (dialogNativo) { dialog.close(); return; }
-    dialog.removeAttribute("open");
-    dialog.classList.remove("is-fallback");
-    if (!dialogsAbertos().length) fundoDialog.hidden = true;
+    const modal = modalDe(dialog);
+    modal.hidden = true;
+    modal.classList.remove("is-entrando");
+    const i = pilhaDialogs.indexOf(dialog);
+    if (i > -1) pilhaDialogs.splice(i, 1);
     let evento;
     try { evento = new Event("close"); } catch (e) { evento = document.createEvent("Event"); evento.initEvent("close", false, false); }
     dialog.dispatchEvent(evento);
   }
 
-  if (!dialogNativo) {
-    fundoDialog.addEventListener("click", () => {
-      const abertos = dialogsAbertos();
-      if (abertos.length) fecharDialog(abertos[abertos.length - 1]);
-    });
-    document.addEventListener("keydown", (e) => {
-      const abertos = dialogsAbertos();
-      if ((e.key === "Escape" || e.key === "Esc") && abertos.length) fecharDialog(abertos[abertos.length - 1]);
-    });
+  function fecharTodos() {
+    pilhaDialogs.slice().reverse().forEach(fecharDialog);
+    document.body.classList.remove("is-locked");
   }
+
+  const focaveis = 'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+  document.addEventListener("keydown", (e) => {
+    const topo = pilhaDialogs[pilhaDialogs.length - 1];
+    if (!topo) return;
+    if (e.key === "Escape" || e.key === "Esc") { e.preventDefault(); fecharDialog(topo); return; }
+    if (e.key !== "Tab") return;
+    // Mantém o Tab dentro do painel aberto
+    const lista = $$(focaveis, topo).filter((n) => n.getClientRects().length);
+    if (!lista.length) { e.preventDefault(); return; }
+    const primeiro = lista[0];
+    const ultimo = lista[lista.length - 1];
+    if (!topo.contains(document.activeElement)) { e.preventDefault(); primeiro.focus(); }
+    else if (e.shiftKey && (document.activeElement === primeiro || document.activeElement === topo)) { e.preventDefault(); ultimo.focus(); }
+    else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+  });
 
   function abrirDialog(dialog, gatilho) {
     dialog._gatilho = gatilho || document.activeElement;
@@ -703,12 +721,12 @@
   }
 
   function prepararDialog(dialog) {
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) fecharDialog(dialog);
-      else if (e.target.closest("[data-close]")) fecharDialog(dialog);
+    // O fundo escuro e os botões "X" têm data-close
+    modalDe(dialog).addEventListener("click", (e) => {
+      if (e.target.closest("[data-close]")) fecharDialog(dialog);
     });
     dialog.addEventListener("close", () => {
-      if (!dialogsAbertos().length) document.body.classList.remove("is-locked");
+      if (!pilhaDialogs.length) document.body.classList.remove("is-locked");
       if (dialog._semDevolverFoco) { dialog._semDevolverFoco = false; return; }
       let alvo = dialog._gatilho;
       if ((!alvo || !alvo.isConnected) && dialog._focoGatilho) {

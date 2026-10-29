@@ -704,54 +704,52 @@ a { color: inherit; }
 .cart-bar-label { flex: 1; text-align: left; }
 .cart-bar-total { font-variant-numeric: tabular-nums; }
 
-/* ---------- Modais / bottom sheets ---------- */
+/* ---------- Modais / bottom sheets ----------
+   .modal fica com display: none (atributo hidden) até abrir. O painel é
+   visível por padrão; .is-entrando só existe por um quadro para animar. */
 
-dialog.sheet {
+.modal {
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+}
+
+.modal-fundo {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(42, 37, 34, .42);
+  cursor: pointer;
+  transition: opacity .2s ease-out;
+}
+
+.sheet {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 100%;
   max-height: 92vh;
   max-height: 92dvh;
-  margin: auto 0 0;
-  padding: 0;
-  border: 0;
   border-radius: 16px 16px 0 0;
   background: var(--surface);
   color: var(--ink);
   overflow: hidden;
+  outline: none;
+  transition: transform .28s var(--ease), opacity .28s var(--ease);
 }
 
-dialog.sheet[open] {
-  display: flex;
-  flex-direction: column;
-  animation: sheet-up .28s var(--ease);
-}
-
-/* Navegadores sem <dialog> mostrariam o conteúdo na página */
-dialog:not([open]) { display: none; }
-
-dialog.sheet.is-fallback {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  z-index: 60;
-}
-
-.dialog-fundo {
-  position: fixed;
-  top: 0; right: 0; bottom: 0; left: 0;
-  z-index: 55;
-  background: rgba(42, 37, 34, .42);
-}
-
-dialog.sheet::backdrop {
-  background: rgba(42, 37, 34, .42);
-  animation: fade-in .2s ease-out;
-}
+.modal.is-entrando .modal-fundo { opacity: 0; transition: none; }
+.modal.is-entrando .sheet { opacity: 0; transform: translateY(24px); transition: none; }
 
 .sheet-inner {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .sheet-head {
@@ -785,7 +783,7 @@ dialog.sheet::backdrop {
 }
 
 .sheet-body {
-  flex: 1;
+  flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -1046,13 +1044,14 @@ dialog.sheet::backdrop {
 .teclado-aberto .toast { display: none; }
 
 @media (max-width: 767px) {
-  .teclado-aberto dialog.sheet[open] {
+  .teclado-aberto .sheet {
+    position: absolute;
     top: var(--vv-topo, 0px);
-    bottom: auto;
+    left: 0; right: 0;
     height: var(--vv-altura, 100%);
     max-height: var(--vv-altura, 100%);
     margin: 0;
-    animation: none;
+    transition: none;
   }
 }
 
@@ -1113,18 +1112,6 @@ dialog.sheet::backdrop {
 
 /* ---------- Animações ---------- */
 
-@keyframes sheet-up {
-  from { transform: translateY(24px); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-
-@keyframes modal-in {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: none; opacity: 1; }
-}
-
-@keyframes fade-in { from { opacity: 0; } }
-
 @keyframes bar-in {
   from { transform: translateY(16px); opacity: 0; }
 }
@@ -1175,7 +1162,8 @@ dialog.sheet::backdrop {
   .item.has-image { grid-template-columns: 96px minmax(0, 1fr) auto; }
   .item-image { width: 96px; height: 96px; }
 
-  dialog.sheet {
+  .modal { justify-content: center; align-items: center; }
+  .sheet {
     width: calc(100% - 64px);
     max-width: 560px;
     max-height: 86vh;
@@ -1183,12 +1171,7 @@ dialog.sheet::backdrop {
     margin: auto;
     border-radius: 14px;
   }
-  dialog.sheet[open] { animation-name: modal-in; animation-duration: .22s; }
-  dialog.sheet.is-fallback {
-    top: 50%; left: 50%; right: auto; bottom: auto;
-    transform: translate(-50%, -50%);
-    animation: none;
-  }
+  .modal.is-entrando .sheet { transform: translateY(8px); }
 
   .sheet-head { padding: 24px 20px 16px 28px; }
   .sheet-body { padding: 4px 28px 24px; }

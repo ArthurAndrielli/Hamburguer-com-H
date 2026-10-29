@@ -164,10 +164,15 @@
   </button>
 
   <!-- Detalhes do item -->
-  <dialog class="sheet" id="item-dialog" aria-labelledby="item-dialog-title"></dialog>
+  <div class="modal" hidden>
+    <div class="modal-fundo" data-close></div>
+    <div class="sheet" id="item-dialog" role="dialog" aria-modal="true" aria-labelledby="item-dialog-title" tabindex="-1"></div>
+  </div>
 
   <!-- Carrinho (celular/tablet) -->
-  <dialog class="sheet" id="cart-dialog" aria-labelledby="cart-dialog-title">
+  <div class="modal" hidden>
+  <div class="modal-fundo" data-close></div>
+  <div class="sheet" id="cart-dialog" role="dialog" aria-modal="true" aria-labelledby="cart-dialog-title" tabindex="-1">
     <div class="sheet-inner">
       <header class="sheet-head">
         <h2 class="sheet-title" id="cart-dialog-title">Seu pedido</h2>
@@ -177,10 +182,13 @@
       </header>
       <div class="sheet-body cart-body" id="cart-dialog-body" tabindex="-1"></div>
     </div>
-  </dialog>
+  </div>
+  </div>
 
   <!-- Finalização -->
-  <dialog class="sheet" id="checkout-dialog" aria-labelledby="checkout-title">
+  <div class="modal" hidden>
+  <div class="modal-fundo" data-close></div>
+  <div class="sheet" id="checkout-dialog" role="dialog" aria-modal="true" aria-labelledby="checkout-title" tabindex="-1">
     <form class="sheet-inner" id="checkout-form" novalidate>
       <header class="sheet-head">
         <div>
@@ -300,7 +308,8 @@
         <button class="btn btn-primary" type="button" id="btn-limpar">Limpar carrinho</button>
       </footer>
     </div>
-  </dialog>
+  </div>
+  </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
